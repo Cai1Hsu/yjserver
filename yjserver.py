@@ -393,7 +393,7 @@ def main():
     
     parser.add_argument('--debug', action='store_true', help='debug mode')
     parser.add_argument('debug', action='store_true', help='debug mode')
-    parser.add_argument('--port', type=int, default=80, help='server port')
+    parser.add_argument('--port', type=int, default=8080, help='server port')
     parser.add_argument('--address', type=str, default='0.0.0.0', help='server address')
     args = parser.parse_args()
 
